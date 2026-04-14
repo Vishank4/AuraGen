@@ -1,0 +1,217 @@
+import React, { useState, useRef } from 'react';
+import html2canvas from 'html2canvas';
+
+// Removed generateMockAssets as we now use the real backend pipeline
+// function generateMockAssets(prompt, count) { ... }
+
+export default function CreateView({ onSaveSuccess, initialDraft }) {
+  const [prompt, setPrompt] = useState(initialDraft?.prompt || '');
+  const [imageCount, setImageCount] = useState(initialDraft?.imageCount || 4);
+  const [aspectRatio, setAspectRatio] = useState(initialDraft?.aspectRatio || '1-1');
+  const [selectedLayout, setSelectedLayout] = useState(initialDraft?.layout || 'grid');
+  
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [activeGrid, setActiveGrid] = useState(initialDraft || null);
+  const gridRef = useRef(null);
+
+  // Re-sync if initialDraft changes (e.g. clicking another link)
+  React.useEffect(() => {
+    if (initialDraft) {
+      setPrompt(initialDraft.prompt);
+      setImageCount(initialDraft.imageCount);
+      setAspectRatio(initialDraft.aspectRatio);
+      setSelectedLayout(initialDraft.layout);
+      setActiveGrid(initialDraft);
+    } else {
+      setActiveGrid(null); // Clear grid if creating fresh
+    }
+  }, [initialDraft]);
+
+  // Expanded layout options based on updated CSS library
+  const aspectOptions = [
+    { id: '1-1', name: '1:1 Square' },
+    { id: '4-3', name: '4:3 Standard' },
+    { id: '16-9', name: '16:9 Wide' },
+    { id: '3-4', name: '3:4 Vertical' },
+    { id: '9-16', name: '9:16 Portrait' }
+  ];
+
+  const layoutOptions = {
+    2: ['split-h', 'split-v', 'hero-l', 'hero-r'],
+    3: ['row', 'col', 'hero-l', 'hero-r', 'hero-t', 'hero-b'],
+    4: ['grid', 'row', 'hero-l', 'hero-r', 'hero-t'],
+    5: ['bento', 'strip', 'hero-center'],
+    6: ['grid', 'uneven', 'complex']
+  };
+
+  const activeLayouts = layoutOptions[imageCount];
+
+  React.useEffect(() => {
+    if (!activeLayouts.includes(selectedLayout)) {
+      setSelectedLayout(activeLayouts[0]);
+    }
+  }, [imageCount, activeLayouts, selectedLayout]);
+
+  const handleGenerate = async () => {
+    setIsGenerating(true);
+    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt,
+          count: imageCount,
+          layout: selectedLayout,
+          aspect_ratio: aspectRatio
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server responded with ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      const newGrid = {
+        prompt: data.prompt,
+        images: data.images,
+        layout: data.layout,
+        imageCount: data.imageCount,
+        aspectRatio: data.aspectRatio
+      };
+      
+      setActiveGrid(newGrid);
+      onSaveSuccess(newGrid);
+    } catch (error) {
+      console.error("Generation failed:", error);
+      alert("Failed to connect to the backend server. Make sure it's running on port 8000.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleDownload = async () => {
+    if (!gridRef.current) return;
+    try {
+      const canvas = await html2canvas(gridRef.current, {
+        useCORS: true,
+        backgroundColor: '#121212',
+        scale: 2
+      });
+      const dataUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = `auragen-${Date.now()}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  return (
+    <div className="view-container" style={{ paddingTop: '2rem' }}>
+      <div className="studio-layout">
+        
+        {/* Sidebar Controls */}
+        <div className="studio-sidebar">
+          <div className="form-group">
+            <label className="form-label">Aesthetic Core</label>
+            <textarea
+              className="form-input font-mono"
+              rows={3}
+              placeholder="e.g. A melancholic jazz club..."
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              disabled={isGenerating}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Asset Count ({imageCount})</label>
+            <input
+              type="range"
+              min="2"
+              max="6"
+              step="1"
+              value={imageCount}
+              onChange={(e) => setImageCount(parseInt(e.target.value))}
+              disabled={isGenerating}
+              style={{ width: '100%' }}
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Aspect Ratio</label>
+            <div className="aspect-selector">
+              {aspectOptions.map(opt => (
+                <button
+                  key={opt.id}
+                  className={`btn-grid-option ${aspectRatio === opt.id ? 'active' : ''}`}
+                  onClick={() => setAspectRatio(opt.id)}
+                >
+                  {opt.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Structural Grid</label>
+            <div>
+              {activeLayouts.map(layout => (
+                <button
+                  key={layout}
+                  className={`btn-grid-option ${selectedLayout === layout ? 'active' : ''}`}
+                  onClick={() => setSelectedLayout(layout)}
+                >
+                  {layout.replace('-', ' ')}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button
+            className="btn-solid"
+            onClick={handleGenerate}
+            disabled={isGenerating || !prompt.trim()}
+            style={{ width: '100%', marginTop: '1rem', background: '#00E59B', color: '#121212', border: 'none' }}
+          >
+            {isGenerating ? 'Generating...' : 'Generate Board'}
+          </button>
+        </div>
+
+        {/* Main Canvas */}
+        <div className="studio-canvas">
+          {activeGrid ? (
+            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div 
+                ref={gridRef}
+                className={`aspect-${activeGrid.aspectRatio}`}
+              >
+                <div 
+                  className={`mood-grid layout-${activeGrid.imageCount}-${activeGrid.layout}`}
+                  style={{ width: '100%', height: '100%' }}
+                >
+                  {activeGrid.images.map((src, idx) => (
+                    <div key={idx} className="image-container">
+                      <img src={src} className="grid-image" crossOrigin="anonymous" alt={`asset ${idx}`}/>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <button className="btn-outline" onClick={handleDownload} style={{ marginTop: '2rem' }}>
+                Download PNG
+              </button>
+            </div>
+          ) : (
+            <div className="font-mono text-secondary" style={{ color: 'var(--text-secondary)' }}>
+              Fill out the parameters and click Generate.
+            </div>
+          )}
+        </div>
+
+      </div>
+    </div>
+  );
+}

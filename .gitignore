@@ -1,0 +1,23 @@
+# Python
+backend/venv/
+backend/__pycache__/
+backend/*.py[cod]
+backend/*.so
+backend/.env
+backend/outputs/*.png
+backend/outputs/*.jpg
+backend/test_request.json
+backend/check_models.py
+
+# Node / React
+frontend/node_modules/
+frontend/.env
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+frontend/dist/
+
+# OS
+.DS_Store
+Thumbs.db
