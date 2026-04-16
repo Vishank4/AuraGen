@@ -1,75 +1,82 @@
 import asyncio
-import os
-import uuid
 import io
 import base64
-import time
-from huggingface_hub import AsyncInferenceClient
+import urllib.parse
+import random
+import httpx
+
 
 class ImageGenerator:
-    def __init__(self, api_key: str):
-        self.api_key = api_key
-        # Engine Mappings Optimized for Reliability & Free Tier
+    """
+    Multi-engine image generator using Pollinations.ai (FLUX models).
+    Zero API keys required. Always free. Always available.
+    """
+
+    def __init__(self, api_key: str = None):
+        # api_key kept in signature for backward compatibility but not used
+        self.base_url = "https://image.pollinations.ai/prompt"
+
+        # Engine → Pollinations model mapping
         self.engines = {
-            "cinematic": "stabilityai/sdxl-turbo",
-            "photoreal": "prompthero/openjourney",
-            "digital_art": "runwayml/stable-diffusion-v1-5",
-            "minimalist": "stabilityai/stable-diffusion-2-1"
-        }
-        self.clients = {
-            name: AsyncInferenceClient(model=model_id, token=self.api_key)
-            for name, model_id in self.engines.items()
+            "cinematic":   "flux",
+            "photoreal":   "flux-realism",
+            "digital_art": "flux-anime",
+            "minimalist":  "flux-3d",
         }
 
-    async def generate_single(self, prompt: str, engine: str = "cinematic", guidance: float = 7.5, steps: int = 30):
+    async def generate_single(
+        self,
+        prompt: str,
+        engine: str = "cinematic",
+        guidance: float = 7.5,
+        steps: int = 30,
+    ) -> str | None:
         """
-        Hits a specific HF Inference Engine with Retry logic for free-tier cold starts.
+        Generate a single image via Pollinations.ai and return as a Base64 data URI.
         """
-        max_retries = 3
-        retry_delay = 5 # seconds
-        
-        for attempt in range(max_retries):
-            try:
-                client = self.clients.get(engine, self.clients["cinematic"])
-                
-                # Use text_to_image with expanded parameters
-                # Note: sdxl-turbo works best with lower steps (e.g. 1-4)
-                actual_steps = steps if engine != "cinematic" else min(steps, 4)
-                
-                image = await client.text_to_image(
-                    prompt,
-                    negative_prompt="blurry, distorted, low quality, pixelated, text, watermark, deformed",
-                    guidance_scale=guidance,
-                    num_inference_steps=actual_steps
-                )
-                
-                # Convert PIL image to Base64
-                buffered = io.BytesIO()
-                image.save(buffered, format="PNG")
-                img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
-                
-                return f"data:image/png;base64,{img_str}"
-                
-            except Exception as e:
-                error_msg = str(e)
-                print(f"Attempt {attempt + 1} failed for {engine}: {error_msg}")
-                
-                # If it's a model loading error (503/533), wait and retry
-                if "503" in error_msg or "533" in error_msg or "loading" in error_msg.lower():
-                    if attempt < max_retries - 1:
-                        print(f"Model {engine} is loading. Retrying in {retry_delay}s...")
-                        await asyncio.sleep(retry_delay)
-                        continue
-                
-                # Other errors fail immediately
-                return None
-        
-        return None
+        model = self.engines.get(engine, self.engines["cinematic"])
+        seed = random.randint(1, 999999)
 
-    async def generate_batch(self, sub_prompts: list, engine: str = "cinematic", guidance: float = 7.5, steps: int = 30):
+        encoded_prompt = urllib.parse.quote(prompt)
+        url = (
+            f"{self.base_url}/{encoded_prompt}"
+            f"?width=1024&height=1024"
+            f"&model={model}"
+            f"&seed={seed}"
+            f"&nologo=true"
+        )
+
+        try:
+            async with httpx.AsyncClient(timeout=90.0, follow_redirects=True) as client:
+                response = await client.get(url)
+
+                if response.status_code == 200 and len(response.content) > 1000:
+                    img_str = base64.b64encode(response.content).decode("utf-8")
+                    content_type = response.headers.get("content-type", "image/jpeg")
+                    return f"data:{content_type};base64,{img_str}"
+                else:
+                    print(f"Pollinations returned status {response.status_code} for engine '{engine}'")
+                    return None
+
+        except Exception as e:
+            print(f"Pollinations request failed for engine '{engine}': {e}")
+            return None
+
+    async def generate_batch(
+        self,
+        sub_prompts: list,
+        engine: str = "cinematic",
+        guidance: float = 7.5,
+        steps: int = 30,
+    ) -> list:
         """
-        Runs multiple generations in parallel using the selected engine.
+        Generate multiple images with staggered timing to avoid rate limits.
         """
-        tasks = [self.generate_single(p, engine, guidance, steps) for p in sub_prompts]
-        results = await asyncio.gather(*tasks)
-        return [r for r in results if r is not None]
+        results = []
+        for i, prompt in enumerate(sub_prompts):
+            if i > 0:
+                await asyncio.sleep(0.5)  # Stagger requests to avoid 429
+            result = await self.generate_single(prompt, engine, guidance, steps)
+            if result:
+                results.append(result)
+        return results

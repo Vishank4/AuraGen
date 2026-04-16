@@ -47,34 +47,29 @@ def read_root():
 @app.post("/api/generate", response_model=GenerateResponse)
 async def generate_moodboard(request: GenerateRequest):
     GEMINI_KEY = os.getenv("GEMINI_API_KEY")
-    HF_KEY = os.getenv("HUGGINGFACE_API_KEY")
-
-    if not GEMINI_KEY or not HF_KEY:
-        print("API Keys missing in environment. Running in MOCK mode.")
-        await asyncio.sleep(2)
-        mock_images = [f"https://picsum.photos/seed/{i+200}/800/800" for i in range(request.count)]
-        return GenerateResponse(
-            prompt=request.prompt,
-            images=mock_images,
-            layout=request.layout,
-            imageCount=request.count,
-            aspectRatio=request.aspect_ratio,
-            reasoning="Mock generation applied due to missing API keys."
-        )
 
     try:
-        # 1. Expand prompt using Gemini (now returns structured data)
-        engineer = PromptEngineer(GEMINI_KEY)
-        expansion_data = await engineer.expand_prompt(request.prompt, request.count)
+        # 1. Expand prompt using Gemini (returns structured data with reasoning)
+        if GEMINI_KEY:
+            engineer = PromptEngineer(GEMINI_KEY)
+            expansion_data = await engineer.expand_prompt(request.prompt, request.count)
+        else:
+            # Fallback if no Gemini key: use raw prompts
+            print("GEMINI_API_KEY not set. Using raw prompts.")
+            expansion_data = {
+                "prompts": [f"{request.prompt}, high quality, cinematic, detailed" for _ in range(request.count)],
+                "reasoning": "Direct prompt mode (no Gemini key configured).",
+                "negative_prompt": "blurry, low quality, distorted"
+            }
+
         sub_prompts = expansion_data["prompts"]
         reasoning = expansion_data["reasoning"]
-        neg_prompt = expansion_data["negative_prompt"]
         
         print(f"Sub-prompts generated: {sub_prompts}")
         print(f"Reasoning: {reasoning}")
 
-        # 2. Generate images using Hugging Face (now uses selected engine and params)
-        generator = ImageGenerator(HF_KEY)
+        # 2. Generate images using Pollinations.ai (no API key needed, always free)
+        generator = ImageGenerator()
         images = await generator.generate_batch(
             sub_prompts, 
             engine=request.engine, 

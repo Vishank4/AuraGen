@@ -5,7 +5,7 @@ import re
 class PromptEngineer:
     def __init__(self, api_key: str):
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-flash-lite-latest')
+        self.model = genai.GenerativeModel('gemini-2.0-flash')
 
     async def expand_prompt(self, user_input: str, count: int):
         """
@@ -33,7 +33,7 @@ class PromptEngineer:
         
         try:
             # Using current stable model
-            self.model = genai.GenerativeModel('gemini-1.5-flash-latest')
+            self.model = genai.GenerativeModel('gemini-2.5-flash-lite')
             response = self.model.generate_content([system_prompt, prompt])
             
             # Extract JSON from the response text

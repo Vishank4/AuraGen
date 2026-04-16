@@ -4,6 +4,3 @@ python-dotenv
 httpx
 pydantic
 google-generativeai
-slowapi
-huggingface_hub[inference]
-pillow
