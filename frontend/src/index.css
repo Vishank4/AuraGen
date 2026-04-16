@@ -268,23 +268,69 @@ body {
   border-bottom-color: var(--text-primary);
 }
 .btn-grid-option {
-  background: transparent;
-  border: 1px solid var(--border-color);
-  color: var(--text-secondary);
-  padding: 0.4rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
   font-family: 'Space Mono', monospace;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   cursor: pointer;
-  margin-right: 0.5rem;
-  margin-bottom: 0.5rem;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
+
 .btn-grid-option:hover {
-  border-color: #666;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.3);
 }
+
 .btn-grid-option.active {
-  border-color: var(--text-primary);
-  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.15);
+  /* Themed border-color applied inline */
+}
+
+/* Engine Buttons */
+.btn-engine {
+  padding: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+  color: #fff;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-engine.active {
+  background: var(--theme-color);
+  border-color: var(--theme-color);
+  color: #000;
+  font-weight: bold;
+}
+
+/* Sliders */
+.slider-themed {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  outline: none;
+  border-radius: 2px;
+}
+
+.slider-themed::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  background: var(--accent);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 10px var(--accent);
 }
 
 .aspect-selector {
@@ -301,23 +347,42 @@ body {
 .aspect-3-4 { aspect-ratio: 3 / 4; height: 600px; max-width: 100%; }
 
 /* GRID ENGINE */
+/* 3D Parallax Hover */
 .mood-grid {
   display: grid;
-  gap: 1px; /* Very brutalist thin gap */
-  background: var(--border-color); /* The gap color */
+  gap: 1px;
+  background: var(--border-color);
   border: 1px solid var(--border-color);
+  transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.studio-canvas:hover .mood-grid {
+  transform: perspective(1000px) rotateX(2deg) rotateY(-2deg);
+}
+
+.image-container {
+  overflow: hidden;
+  position: relative;
+  transition: transform 0.3s ease;
+  background: #222;
+}
+
+.image-container:hover {
+  transform: translateZ(30px);
 }
 
 .grid-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  background: #222;
-  transition: filter 0.3s;
+  transition: filter 0.3s, transform 0.3s ease;
 }
-.image-container {
-  overflow: hidden;
-  position: relative;
+
+.image-container:hover .grid-image {
+  filter: brightness(1.1);
+  transform: scale(1.05);
 }
 
 /* --- 2 IMAGES --- */

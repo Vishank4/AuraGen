@@ -28,6 +28,9 @@ class GenerateRequest(BaseModel):
     count: int
     layout: str
     aspect_ratio: str
+    engine: Optional[str] = "cinematic"
+    guidance: Optional[float] = 7.5
+    steps: Optional[int] = 30
 
 class GenerateResponse(BaseModel):
     prompt: str
@@ -35,6 +38,7 @@ class GenerateResponse(BaseModel):
     layout: str
     imageCount: int
     aspectRatio: str
+    reasoning: Optional[str] = ""
 
 @app.get("/")
 def read_root():
@@ -54,25 +58,37 @@ async def generate_moodboard(request: GenerateRequest):
             images=mock_images,
             layout=request.layout,
             imageCount=request.count,
-            aspectRatio=request.aspect_ratio
+            aspectRatio=request.aspect_ratio,
+            reasoning="Mock generation applied due to missing API keys."
         )
 
     try:
-        # 1. Expand prompt using Gemini
+        # 1. Expand prompt using Gemini (now returns structured data)
         engineer = PromptEngineer(GEMINI_KEY)
-        sub_prompts = await engineer.expand_prompt(request.prompt, request.count)
+        expansion_data = await engineer.expand_prompt(request.prompt, request.count)
+        sub_prompts = expansion_data["prompts"]
+        reasoning = expansion_data["reasoning"]
+        neg_prompt = expansion_data["negative_prompt"]
+        
         print(f"Sub-prompts generated: {sub_prompts}")
+        print(f"Reasoning: {reasoning}")
 
-        # 2. Generate images using Hugging Face (returns Base64 strings)
+        # 2. Generate images using Hugging Face (now uses selected engine and params)
         generator = ImageGenerator(HF_KEY)
-        images = await generator.generate_batch(sub_prompts)
+        images = await generator.generate_batch(
+            sub_prompts, 
+            engine=request.engine, 
+            guidance=request.guidance, 
+            steps=request.steps
+        )
         
         return GenerateResponse(
             prompt=request.prompt,
             images=images,
             layout=request.layout,
             imageCount=len(images),
-            aspectRatio=request.aspect_ratio
+            aspectRatio=request.aspect_ratio,
+            reasoning=reasoning
         )
     except Exception as e:
         print(f"Pipeline error: {e}")

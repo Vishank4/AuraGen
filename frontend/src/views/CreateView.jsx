@@ -12,9 +12,23 @@ export default function CreateView({ onSaveSuccess, initialDraft }) {
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeGrid, setActiveGrid] = useState(initialDraft || null);
+  const [engine, setEngine] = useState('cinematic');
+  const [guidanceScale, setGuidanceScale] = useState(7.5);
+  const [inferenceSteps, setInferenceSteps] = useState(30);
+  const [reasoning, setReasoning] = useState('');
+
   const gridRef = useRef(null);
 
-  // Re-sync if initialDraft changes (e.g. clicking another link)
+  const engineThemes = {
+    cinematic: { color: '#3b82f6', label: 'Engine Alpha (Cinematic)' },
+    photoreal: { color: '#fbbf24', label: 'Engine Beta (Photoreal)' },
+    digital_art: { color: '#a855f7', label: 'Engine Gamma (Artistic)' },
+    minimalist: { color: '#10b981', label: 'Engine Delta (Structural)' },
+  };
+
+  const currentTheme = engineThemes[engine];
+
+  // Re-sync if initialDraft changes
   React.useEffect(() => {
     if (initialDraft) {
       setPrompt(initialDraft.prompt);
@@ -22,12 +36,12 @@ export default function CreateView({ onSaveSuccess, initialDraft }) {
       setAspectRatio(initialDraft.aspectRatio);
       setSelectedLayout(initialDraft.layout);
       setActiveGrid(initialDraft);
+      setReasoning(initialDraft.reasoning || '');
     } else {
-      setActiveGrid(null); // Clear grid if creating fresh
+      setActiveGrid(null);
     }
   }, [initialDraft]);
 
-  // Expanded layout options based on updated CSS library
   const aspectOptions = [
     { id: '1-1', name: '1:1 Square' },
     { id: '4-3', name: '4:3 Standard' },
@@ -54,6 +68,7 @@ export default function CreateView({ onSaveSuccess, initialDraft }) {
 
   const handleGenerate = async () => {
     setIsGenerating(true);
+    setReasoning(''); 
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
     try {
       const response = await fetch(`${apiBaseUrl}/api/generate`, {
@@ -63,7 +78,10 @@ export default function CreateView({ onSaveSuccess, initialDraft }) {
           prompt,
           count: imageCount,
           layout: selectedLayout,
-          aspect_ratio: aspectRatio
+          aspect_ratio: aspectRatio,
+          engine,
+          guidance: parseFloat(guidanceScale),
+          steps: parseInt(inferenceSteps)
         })
       });
 
@@ -78,14 +96,16 @@ export default function CreateView({ onSaveSuccess, initialDraft }) {
         images: data.images,
         layout: data.layout,
         imageCount: data.imageCount,
-        aspectRatio: data.aspectRatio
+        aspectRatio: data.aspectRatio,
+        reasoning: data.reasoning
       };
       
       setActiveGrid(newGrid);
+      setReasoning(data.reasoning);
       onSaveSuccess(newGrid);
     } catch (error) {
       console.error("Generation failed:", error);
-      alert("Failed to connect to the backend server. Make sure it's running on port 8000.");
+      alert("Failed to connect to the backend server.");
     } finally {
       setIsGenerating(false);
     }
@@ -114,17 +134,72 @@ export default function CreateView({ onSaveSuccess, initialDraft }) {
       <div className="studio-layout">
         
         {/* Sidebar Controls */}
-        <div className="studio-sidebar">
+        <div className="studio-sidebar glass-panel" style={{ borderLeft: `2px solid ${currentTheme.color}` }}>
+          
+          <div className="form-group">
+            <label className="form-label" style={{ color: currentTheme.color }}>Aura Engine Core</label>
+            <div className="engine-selector grid grid-cols-2 gap-2">
+              {Object.entries(engineThemes).map(([key, value]) => (
+                <button
+                  key={key}
+                  className={`btn-engine ${engine === key ? 'active' : ''}`}
+                  style={{ 
+                    '--theme-color': value.color,
+                    borderColor: engine === key ? value.color : 'rgba(255,255,255,0.1)'
+                  }}
+                  onClick={() => setEngine(key)}
+                >
+                  {key.replace('_', ' ')}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="form-group">
             <label className="form-label">Aesthetic Core</label>
             <textarea
               className="form-input font-mono"
-              rows={3}
+              rows={2}
               placeholder="e.g. A melancholic jazz club..."
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               disabled={isGenerating}
             />
+          </div>
+
+          {/* Generative Lab Sliders */}
+          <div className="generative-lab section-border">
+            <div className="form-group">
+              <label className="form-label flex justify-between">
+                Guidance Scale <span>{guidanceScale}</span>
+              </label>
+              <input
+                type="range"
+                min="1"
+                max="15"
+                step="0.5"
+                value={guidanceScale}
+                onChange={(e) => setGuidanceScale(parseFloat(e.target.value))}
+                className="slider-themed"
+                style={{ '--accent': currentTheme.color }}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label flex justify-between">
+                Inference Steps <span>{inferenceSteps}</span>
+              </label>
+              <input
+                type="range"
+                min="10"
+                max="50"
+                step="1"
+                value={inferenceSteps}
+                onChange={(e) => setInferenceSteps(parseInt(e.target.value))}
+                className="slider-themed"
+                style={{ '--accent': currentTheme.color }}
+              />
+            </div>
           </div>
 
           <div className="form-group">
@@ -137,7 +212,7 @@ export default function CreateView({ onSaveSuccess, initialDraft }) {
               value={imageCount}
               onChange={(e) => setImageCount(parseInt(e.target.value))}
               disabled={isGenerating}
-              style={{ width: '100%' }}
+              style={{ width: '100%', accentColor: currentTheme.color }}
             />
           </div>
 
@@ -149,6 +224,7 @@ export default function CreateView({ onSaveSuccess, initialDraft }) {
                   key={opt.id}
                   className={`btn-grid-option ${aspectRatio === opt.id ? 'active' : ''}`}
                   onClick={() => setAspectRatio(opt.id)}
+                  style={{ borderColor: aspectRatio === opt.id ? currentTheme.color : '' }}
                 >
                   {opt.name}
                 </button>
@@ -158,12 +234,13 @@ export default function CreateView({ onSaveSuccess, initialDraft }) {
 
           <div className="form-group">
             <label className="form-label">Structural Grid</label>
-            <div>
+            <div className="grid grid-cols-2 gap-2">
               {activeLayouts.map(layout => (
                 <button
                   key={layout}
                   className={`btn-grid-option ${selectedLayout === layout ? 'active' : ''}`}
                   onClick={() => setSelectedLayout(layout)}
+                  style={{ borderColor: selectedLayout === layout ? currentTheme.color : '' }}
                 >
                   {layout.replace('-', ' ')}
                 </button>
@@ -172,13 +249,26 @@ export default function CreateView({ onSaveSuccess, initialDraft }) {
           </div>
 
           <button
-            className="btn-solid"
+            className="btn-solid glow-button"
             onClick={handleGenerate}
             disabled={isGenerating || !prompt.trim()}
-            style={{ width: '100%', marginTop: '1rem', background: '#00E59B', color: '#121212', border: 'none' }}
+            style={{ 
+              width: '100%', 
+              marginTop: '1rem', 
+              background: currentTheme.color,
+              filter: `drop-shadow(0 0 10px ${currentTheme.color}44)`
+            }}
           >
-            {isGenerating ? 'Generating...' : 'Generate Board'}
+            {isGenerating ? 'Diffusing...' : 'Generate Lab Board'}
           </button>
+
+          {/* AI Reasoning Display */}
+          {reasoning && !isGenerating && (
+            <div className="ai-reasoning mt-6 p-4 rounded bg-white/5 border border-white/10 italic text-sm">
+              <div className="text-xs uppercase tracking-widest opacity-50 mb-2 font-bold" style={{ color: currentTheme.color }}>System Rationale</div>
+              "{reasoning}"
+            </div>
+          )}
         </div>
 
         {/* Main Canvas */}
