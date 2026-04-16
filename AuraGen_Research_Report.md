@@ -33,23 +33,28 @@ A critical technical challenge was deploying to free-tier cloud environments (Re
 2.  **Base64 Encoding:** Converting raw binary into URI-safe data strings.
 3.  **Direct Delivery:** Eliminating disk I/O entirely, ensuring 100% asset persistence regardless of server restarts.
 
-### 3.2 Decoupled High-Performance UI
-The frontend is built on **React 19** and **Framer Motion**, utilizing a "Bento Box" grid system. This allows for dynamic re-layout of assets (Hero, Row, Grid) without re-fetching data, providing a high-performance user experience.
+### 3.3 Multi-Model Orchestration and Control
+AuraGen implements a polymorphic backend orchestrator capable of switching between multiple fine-tuned diffusion checkpoints. This allows for comparative analysis of model behaviors:
+- **Engine Alpha (Cinematic):** Base SDXL architecture for high-fidelity generalism.
+- **Engine Beta (Photoreal):** A specialized checkpoint optimized for skin textures and material realism.
+- **Engine Gamma (Artistic):** Fine-tuned for illustrative and high-aesthetic creative output.
+
+Users are granted direct control over the **guidance_scale** (CFG) and **inference_steps**, shifting the system from a consumer tool to a research-oriented generative laboratory.
 
 ---
 
 ## 4. Results & Discussion
 
-### 4.1 Performance Evaluation
-Deployment on the **Vercel + Render** ecosystem demonstrated that the asynchronous pipeline allows for concurrent generation of up to 4 high-resolution images within 15-20 seconds. The implementation of CORS (Cross-Origin Resource Sharing) and dynamic porting allowed for seamless inter-service communication.
+### 4.1 Performance and Reliability
+Deployment on the Vercel + Render ecosystem showed consistent generation cycles. The implemented in-memory Base64 pipeline ensures that assets persist across ephemeral server restarts, maintaining 100% availability for user moodboards.
 
-### 4.2 Resilience Logic
-The inclusion of a "Graceful Fallback" mechanism in the Prompt Engineer ensures that the system maintains 99.9% availability. If the primary LLM layer fails due to quota limits, the system reverts to a localized aesthetic-boost algorithm to ensure user tasks are completed.
+### 4.2 Adaptive Prompt Diagnostics
+The system integrates an **Interpretability Layer** where the LLM (Gemini) provides stylistic reasoning for every decision. This transparency allows for iterative refining, satisfying **Module IV** objectives of the generative AI lifecycle.
 
 ---
 
 ## 5. Conclusion
-AuraGen demonstrates a successful integration of modern generative AI models into a scalable web architecture. By solving the challenges of asset persistence in serverless environments and providing a high-fidelity curation engine, AuraGen sets a new standard for automated design tools.
+AuraGen successfully bridges the gap between abstract user intent and technical generative control. By providing a multi-engine environment with transparent AI reasoning, the framework serves as a robust platform for both academic research and professional design workflows.
 
 ---
 

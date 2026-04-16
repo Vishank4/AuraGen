@@ -16,6 +16,7 @@ export default function CreateView({ onSaveSuccess, initialDraft }) {
   const [guidanceScale, setGuidanceScale] = useState(7.5);
   const [inferenceSteps, setInferenceSteps] = useState(30);
   const [reasoning, setReasoning] = useState('');
+  const [error, setError] = useState(null);
 
   const gridRef = useRef(null);
 
@@ -68,6 +69,7 @@ export default function CreateView({ onSaveSuccess, initialDraft }) {
 
   const handleGenerate = async () => {
     setIsGenerating(true);
+    setError(null);
     setReasoning(''); 
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
     try {
@@ -91,6 +93,12 @@ export default function CreateView({ onSaveSuccess, initialDraft }) {
 
       const data = await response.json();
       
+      if (!data.images || data.images.length === 0) {
+        setError("AI Engines are currently overwhelmed or loading. Please try a different engine or click generate again.");
+        setActiveGrid(null);
+        return;
+      }
+
       const newGrid = {
         prompt: data.prompt,
         images: data.images,
@@ -105,7 +113,7 @@ export default function CreateView({ onSaveSuccess, initialDraft }) {
       onSaveSuccess(newGrid);
     } catch (error) {
       console.error("Generation failed:", error);
-      alert("Failed to connect to the backend server.");
+      setError("Failed to connect to the backend server. The AI core might be warming up.");
     } finally {
       setIsGenerating(false);
     }
@@ -293,6 +301,12 @@ export default function CreateView({ onSaveSuccess, initialDraft }) {
               <button className="btn-outline" onClick={handleDownload} style={{ marginTop: '2rem' }}>
                 Download PNG
               </button>
+            </div>
+          ) : error ? (
+            <div className="text-center p-8 bg-black/20 rounded border border-white/5 max-w-md">
+              <div className="text-xl mb-2" style={{ color: currentTheme.color }}>Engine Delay Detected</div>
+              <div className="font-mono text-sm opacity-60 mb-4">{error}</div>
+              <button className="btn-outline text-xs" onClick={handleGenerate}>Try Again</button>
             </div>
           ) : (
             <div className="font-mono text-secondary" style={{ color: 'var(--text-secondary)' }}>
