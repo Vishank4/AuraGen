@@ -10,6 +10,10 @@
   --accent-hover: #E0E0E0;
   --brand-color: #00E59B;
   --radius: 0px; 
+  --cinematic-color: #1C2504;
+  --photoreal-color: #FEFADD;
+  --digital-color: #FFFFFF;
+  --minimalist-color: #F4F1EA;
 }
 
 [data-theme='light'] {
@@ -221,20 +225,52 @@ body {
   align-items: flex-start;
 }
 .studio-sidebar {
-  width: 320px;
+  width: 360px;
   flex-shrink: 0;
   position: sticky;
   top: 2rem;
+  z-index: 10;
 }
+
+.control-deck {
+  position: relative;
+  background: rgba(26, 26, 26, 0.4);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 2.5rem;
+  overflow: hidden;
+  box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.5);
+}
+
+.deck-shimmer {
+  position: absolute;
+  top: -20%;
+  left: -20%;
+  width: 140%;
+  height: 140%;
+  background: radial-gradient(circle at center, var(--theme-color, #fff) 0%, transparent 60%);
+  opacity: 0.05;
+  filter: blur(60px);
+  pointer-events: none;
+  z-index: -1;
+  animation: shimmerPulse 8s infinite alternate ease-in-out;
+}
+
+@keyframes shimmerPulse {
+  from { transform: scale(1) rotate(0deg); opacity: 0.03; }
+  to { transform: scale(1.2) rotate(10deg); opacity: 0.08; }
+}
+
 .studio-canvas {
   flex-grow: 1;
-  padding: 2rem;
-  background: var(--panel-bg);
-  border: 1px solid var(--border-color);
-  min-height: 70vh;
+  padding: 3rem;
+  background: #0D0D0D;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  min-height: 80vh;
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 
 /* FORMS */
@@ -290,48 +326,58 @@ body {
   /* Themed border-color applied inline */
 }
 
-/* Engine Buttons */
-.btn-engine {
-  padding: 0.75rem;
+/* Engine Buttons & Standard Deck Buttons */
+.btn-engine, .btn-grid-option, .btn-solid, .btn-outline {
+  padding: 0.85rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(0, 0, 0, 0.2);
+  background: transparent;
   color: #fff;
   font-family: 'Space Mono', monospace;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
   cursor: pointer;
-  transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  transition: color 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 15px -5px rgba(0, 0, 0, 0.5);
+}
+
+/* White Roll-up Animation */
+.btn-engine::before, .btn-grid-option::before, .btn-solid::before, .btn-outline::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 0%;
+  background: #FFFFFF;
+  z-index: -1;
+  transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-engine:hover::before, .btn-grid-option:hover::before, .btn-solid:hover::before, .btn-outline:hover::before {
+  height: 100%;
+}
+
+.btn-engine:hover, .btn-grid-option:hover, .btn-solid:hover, .btn-outline:hover {
+  color: #000;
+  box-shadow: 0 0 40px -10px rgba(255, 255, 255, 0.3);
+}
+
+/* Mirror Shine / Background Shadows */
+.btn-engine.active, .btn-grid-option.active {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--theme-color, #fff);
+  box-shadow: 0 0 20px -5px var(--theme-color, #fff);
 }
 
 .btn-engine.active {
-  background: var(--theme-color);
-  border-color: var(--theme-color);
-  color: #000;
-  font-weight: bold;
+  color: var(--theme-color, #fff);
+  font-weight: 700;
 }
 
-/* Sliders */
-.slider-themed {
-  -webkit-appearance: none;
-  width: 100%;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.1);
-  outline: none;
-  border-radius: 2px;
-}
-
-.slider-themed::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 16px;
-  height: 16px;
-  background: var(--accent);
-  border-radius: 50%;
-  cursor: pointer;
-  box-shadow: 0 0 10px var(--accent);
-}
+/* Sliders removed in UI, but keeping legacy styles if needed by other components */
 
 .aspect-selector {
   display: flex;

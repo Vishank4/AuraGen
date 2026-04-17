@@ -13,18 +13,15 @@ export default function CreateView({ onSaveSuccess, initialDraft }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeGrid, setActiveGrid] = useState(initialDraft || null);
   const [engine, setEngine] = useState('cinematic');
-  const [guidanceScale, setGuidanceScale] = useState(7.5);
-  const [inferenceSteps, setInferenceSteps] = useState(30);
-  const [reasoning, setReasoning] = useState('');
   const [error, setError] = useState(null);
 
   const gridRef = useRef(null);
 
   const engineThemes = {
-    cinematic: { color: '#3b82f6', label: 'Engine Alpha (Cinematic)' },
-    photoreal: { color: '#fbbf24', label: 'Engine Beta (Photoreal)' },
-    digital_art: { color: '#a855f7', label: 'Engine Gamma (Artistic)' },
-    minimalist: { color: '#10b981', label: 'Engine Delta (Structural)' },
+    cinematic: { color: '#1C2504', label: 'Cinematic' },
+    photoreal: { color: '#FEFADD', label: 'Photoreal' },
+    digital_art: { color: '#FFFFFF', label: 'Digital Art' },
+    minimalist: { color: '#F4F1EA', label: 'Minimalist' },
   };
 
   const currentTheme = engineThemes[engine];
@@ -37,7 +34,6 @@ export default function CreateView({ onSaveSuccess, initialDraft }) {
       setAspectRatio(initialDraft.aspectRatio);
       setSelectedLayout(initialDraft.layout);
       setActiveGrid(initialDraft);
-      setReasoning(initialDraft.reasoning || '');
     } else {
       setActiveGrid(null);
     }
@@ -82,8 +78,8 @@ export default function CreateView({ onSaveSuccess, initialDraft }) {
           layout: selectedLayout,
           aspect_ratio: aspectRatio,
           engine,
-          guidance: parseFloat(guidanceScale),
-          steps: parseInt(inferenceSteps)
+          guidance: 7.5, // Fallback to safe defaults
+          steps: 30
         })
       });
 
@@ -109,7 +105,6 @@ export default function CreateView({ onSaveSuccess, initialDraft }) {
       };
       
       setActiveGrid(newGrid);
-      setReasoning(data.reasoning);
       onSaveSuccess(newGrid);
     } catch (error) {
       console.error("Generation failed:", error);
@@ -141,142 +136,102 @@ export default function CreateView({ onSaveSuccess, initialDraft }) {
     <div className="view-container" style={{ paddingTop: '2rem' }}>
       <div className="studio-layout">
         
-        {/* Sidebar Controls */}
-        <div className="studio-sidebar glass-panel" style={{ borderLeft: `2px solid ${currentTheme.color}` }}>
-          
-          <div className="form-group">
-            <label className="form-label" style={{ color: currentTheme.color }}>Aura Engine Core</label>
-            <div className="engine-selector grid grid-cols-2 gap-2">
-              {Object.entries(engineThemes).map(([key, value]) => (
-                <button
-                  key={key}
-                  className={`btn-engine ${engine === key ? 'active' : ''}`}
-                  style={{ 
-                    '--theme-color': value.color,
-                    borderColor: engine === key ? value.color : 'rgba(255,255,255,0.1)'
-                  }}
-                  onClick={() => setEngine(key)}
-                >
-                  {key.replace('_', ' ')}
-                </button>
-              ))}
-            </div>
-          </div>
+        {/* Control Deck */}
+        <div className="studio-sidebar">
+          <div className="control-deck">
+            <div className="deck-shimmer" style={{ '--theme-color': currentTheme.color }}></div>
 
-          <div className="form-group">
-            <label className="form-label">Aesthetic Core</label>
-            <textarea
-              className="form-input font-mono"
-              rows={2}
-              placeholder="e.g. A melancholic jazz club..."
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              disabled={isGenerating}
-            />
-          </div>
-
-          {/* Generative Lab Sliders */}
-          <div className="generative-lab section-border">
             <div className="form-group">
-              <label className="form-label flex justify-between">
-                Guidance Scale <span>{guidanceScale}</span>
-              </label>
-              <input
-                type="range"
-                min="1"
-                max="15"
-                step="0.5"
-                value={guidanceScale}
-                onChange={(e) => setGuidanceScale(parseFloat(e.target.value))}
-                className="slider-themed"
-                style={{ '--accent': currentTheme.color }}
+              <div className="engine-selector grid grid-cols-2 gap-2">
+                {Object.entries(engineThemes).map(([key, value]) => (
+                  <button
+                    key={key}
+                    className={`btn-engine ${engine === key ? 'active' : ''}`}
+                    style={{ 
+                      '--theme-color': value.color,
+                      borderColor: engine === key ? value.color : 'rgba(255,255,255,0.1)'
+                    }}
+                    onClick={() => setEngine(key)}
+                  >
+                    {key.replace('_', ' ')}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Aesthetic Core</label>
+              <textarea
+                className="form-input font-mono"
+                rows={2}
+                placeholder="e.g. A melancholic jazz club..."
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                disabled={isGenerating}
               />
             </div>
 
             <div className="form-group">
-              <label className="form-label flex justify-between">
-                Inference Steps <span>{inferenceSteps}</span>
-              </label>
+              <label className="form-label">Asset Count ({imageCount})</label>
               <input
                 type="range"
-                min="10"
-                max="50"
+                min="2"
+                max="6"
                 step="1"
-                value={inferenceSteps}
-                onChange={(e) => setInferenceSteps(parseInt(e.target.value))}
-                className="slider-themed"
-                style={{ '--accent': currentTheme.color }}
+                value={imageCount}
+                onChange={(e) => setImageCount(parseInt(e.target.value))}
+                disabled={isGenerating}
+                style={{ width: '100%', accentColor: currentTheme.color }}
               />
             </div>
-          </div>
 
-          <div className="form-group">
-            <label className="form-label">Asset Count ({imageCount})</label>
-            <input
-              type="range"
-              min="2"
-              max="6"
-              step="1"
-              value={imageCount}
-              onChange={(e) => setImageCount(parseInt(e.target.value))}
-              disabled={isGenerating}
-              style={{ width: '100%', accentColor: currentTheme.color }}
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Aspect Ratio</label>
-            <div className="aspect-selector">
-              {aspectOptions.map(opt => (
-                <button
-                  key={opt.id}
-                  className={`btn-grid-option ${aspectRatio === opt.id ? 'active' : ''}`}
-                  onClick={() => setAspectRatio(opt.id)}
-                  style={{ borderColor: aspectRatio === opt.id ? currentTheme.color : '' }}
-                >
-                  {opt.name}
-                </button>
-              ))}
+            <div className="form-group">
+              <label className="form-label">Aspect Ratio</label>
+              <div className="aspect-selector">
+                {aspectOptions.map(opt => (
+                  <button
+                    key={opt.id}
+                    className={`btn-grid-option ${aspectRatio === opt.id ? 'active' : ''}`}
+                    onClick={() => setAspectRatio(opt.id)}
+                    style={{ borderColor: aspectRatio === opt.id ? currentTheme.color : '' }}
+                  >
+                    {opt.name}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
 
-          <div className="form-group">
-            <label className="form-label">Structural Grid</label>
-            <div className="grid grid-cols-2 gap-2">
-              {activeLayouts.map(layout => (
-                <button
-                  key={layout}
-                  className={`btn-grid-option ${selectedLayout === layout ? 'active' : ''}`}
-                  onClick={() => setSelectedLayout(layout)}
-                  style={{ borderColor: selectedLayout === layout ? currentTheme.color : '' }}
-                >
-                  {layout.replace('-', ' ')}
-                </button>
-              ))}
+            <div className="form-group">
+              <label className="form-label">Structural Grid</label>
+              <div className="grid grid-cols-2 gap-2">
+                {activeLayouts.map(layout => (
+                  <button
+                    key={layout}
+                    className={`btn-grid-option ${selectedLayout === layout ? 'active' : ''}`}
+                    onClick={() => setSelectedLayout(layout)}
+                    style={{ borderColor: selectedLayout === layout ? currentTheme.color : '' }}
+                  >
+                    {layout.replace('-', ' ')}
+                  </button>
+                ))}
+              </div>
             </div>
+
+            <button
+              className="btn-solid"
+              onClick={handleGenerate}
+              disabled={isGenerating || !prompt.trim()}
+              style={{ 
+                width: '100%', 
+                marginTop: '1.5rem', 
+                border: `1px solid ${currentTheme.color}66`,
+                '--theme-color': currentTheme.color 
+              }}
+            >
+              {isGenerating ? 'Diffusing...' : 'Generate Lab Board'}
+            </button>
           </div>
-
-          <button
-            className="btn-solid glow-button"
-            onClick={handleGenerate}
-            disabled={isGenerating || !prompt.trim()}
-            style={{ 
-              width: '100%', 
-              marginTop: '1rem', 
-              background: currentTheme.color,
-              filter: `drop-shadow(0 0 10px ${currentTheme.color}44)`
-            }}
-          >
-            {isGenerating ? 'Diffusing...' : 'Generate Lab Board'}
-          </button>
-
-          {/* AI Reasoning Display */}
-          {reasoning && !isGenerating && (
-            <div className="ai-reasoning mt-6 p-4 rounded bg-white/5 border border-white/10 italic text-sm">
-              <div className="text-xs uppercase tracking-widest opacity-50 mb-2 font-bold" style={{ color: currentTheme.color }}>System Rationale</div>
-              "{reasoning}"
-            </div>
-          )}
+        </div>
         </div>
 
         {/* Main Canvas */}
