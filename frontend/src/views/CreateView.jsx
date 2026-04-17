@@ -232,7 +232,6 @@ export default function CreateView({ onSaveSuccess, initialDraft }) {
             </button>
           </div>
         </div>
-        </div>
 
         {/* Main Canvas */}
         <div className="studio-canvas">
