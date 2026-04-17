@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import html2canvas from 'html2canvas';
+import { Settings2 } from 'lucide-react';
 
 // Removed generateMockAssets as we now use the real backend pipeline
 // function generateMockAssets(prompt, count) { ... }
@@ -18,10 +19,10 @@ export default function CreateView({ onSaveSuccess, initialDraft }) {
   const gridRef = useRef(null);
 
   const engineThemes = {
-    cinematic: { color: '#1C2504', label: 'Cinematic' },
-    photoreal: { color: '#FEFADD', label: 'Photoreal' },
-    digital_art: { color: '#FFFFFF', label: 'Digital Art' },
-    minimalist: { color: '#F4F1EA', label: 'Minimalist' },
+    cinematic: { color: '#1C2504', label: 'Cinematic', contrast: '#FFFFFF', theme: 'light' },
+    photoreal: { color: '#FEFADD', label: 'Photoreal', contrast: '#000000', theme: 'dark' },
+    digital_art: { color: '#FFFFFF', label: 'Digital Art', contrast: '#000000', theme: 'dark' },
+    minimalist: { color: '#F4F1EA', label: 'Minimalist', contrast: '#000000', theme: 'dark' },
   };
 
   const currentTheme = engineThemes[engine];
@@ -66,7 +67,6 @@ export default function CreateView({ onSaveSuccess, initialDraft }) {
   const handleGenerate = async () => {
     setIsGenerating(true);
     setError(null);
-    setReasoning(''); 
     const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
     try {
       const response = await fetch(`${apiBaseUrl}/api/generate`, {
@@ -138,8 +138,18 @@ export default function CreateView({ onSaveSuccess, initialDraft }) {
         
         {/* Control Deck */}
         <div className="studio-sidebar">
-          <div className="control-deck">
-            <div className="deck-shimmer" style={{ '--theme-color': currentTheme.color }}></div>
+          <div 
+            className="control-deck" 
+            style={{ 
+              '--theme-color': currentTheme.color,
+              '--theme-contrast': currentTheme.contrast
+            }}
+            data-contrast={currentTheme.theme}
+          >
+            <div className="deck-header">
+              <Settings2 size={18} />
+              <span>Engine Parameters</span>
+            </div>
 
             <div className="form-group">
               <div className="engine-selector grid grid-cols-2 gap-2">
@@ -147,32 +157,34 @@ export default function CreateView({ onSaveSuccess, initialDraft }) {
                   <button
                     key={key}
                     className={`btn-engine ${engine === key ? 'active' : ''}`}
-                    style={{ 
-                      '--theme-color': value.color,
-                      borderColor: engine === key ? value.color : 'rgba(255,255,255,0.1)'
-                    }}
                     onClick={() => setEngine(key)}
                   >
-                    {key.replace('_', ' ')}
+                    {value.label}
                   </button>
                 ))}
               </div>
             </div>
 
+            <div className="brutalist-divider" />
+
             <div className="form-group">
-              <label className="form-label">Aesthetic Core</label>
+              <label className="form-label" style={{ color: 'inherit' }}>Aesthetic Core</label>
               <textarea
-                className="form-input font-mono"
+                className="form-input"
                 rows={2}
-                placeholder="e.g. A melancholic jazz club..."
+                placeholder="Describe your vision..."
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 disabled={isGenerating}
               />
             </div>
 
+            <div className="brutalist-divider" />
+
             <div className="form-group">
-              <label className="form-label">Asset Count ({imageCount})</label>
+              <label className="form-label flex justify-between" style={{ color: 'inherit' }}>
+                Asset Count <span>{imageCount}</span>
+              </label>
               <input
                 type="range"
                 min="2"
@@ -181,35 +193,35 @@ export default function CreateView({ onSaveSuccess, initialDraft }) {
                 value={imageCount}
                 onChange={(e) => setImageCount(parseInt(e.target.value))}
                 disabled={isGenerating}
-                style={{ width: '100%', accentColor: currentTheme.color }}
+                className="slider-brutalist"
               />
             </div>
 
+            <div className="brutalist-divider" />
+
             <div className="form-group">
-              <label className="form-label">Aspect Ratio</label>
+              <label className="form-label" style={{ color: 'inherit' }}>Aspect Ratio</label>
               <div className="aspect-selector">
                 {aspectOptions.map(opt => (
                   <button
                     key={opt.id}
                     className={`btn-grid-option ${aspectRatio === opt.id ? 'active' : ''}`}
                     onClick={() => setAspectRatio(opt.id)}
-                    style={{ borderColor: aspectRatio === opt.id ? currentTheme.color : '' }}
                   >
-                    {opt.name}
+                    {opt.name.split(' ')[0]}
                   </button>
                 ))}
               </div>
             </div>
 
             <div className="form-group">
-              <label className="form-label">Structural Grid</label>
+              <label className="form-label" style={{ color: 'inherit' }}>Structural Grid</label>
               <div className="grid grid-cols-2 gap-2">
                 {activeLayouts.map(layout => (
                   <button
                     key={layout}
                     className={`btn-grid-option ${selectedLayout === layout ? 'active' : ''}`}
                     onClick={() => setSelectedLayout(layout)}
-                    style={{ borderColor: selectedLayout === layout ? currentTheme.color : '' }}
                   >
                     {layout.replace('-', ' ')}
                   </button>
@@ -217,18 +229,19 @@ export default function CreateView({ onSaveSuccess, initialDraft }) {
               </div>
             </div>
 
+            <div className="brutalist-divider" style={{ opacity: 0.8 }} />
+
             <button
               className="btn-solid"
               onClick={handleGenerate}
               disabled={isGenerating || !prompt.trim()}
               style={{ 
-                width: '100%', 
-                marginTop: '1.5rem', 
-                border: `1px solid ${currentTheme.color}66`,
-                '--theme-color': currentTheme.color 
+                width: '100%',
+                background: currentTheme.contrast === '#000000' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)',
+                borderWidth: '2px'
               }}
             >
-              {isGenerating ? 'Diffusing...' : 'Generate Lab Board'}
+              {isGenerating ? 'Processing...' : 'Generate Lab Board'}
             </button>
           </div>
         </div>
