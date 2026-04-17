@@ -17,7 +17,7 @@ export default function HomeView({ onGoToCreate, onGoToAbout }) {
         <button className="btn-outline" onClick={onGoToAbout}>
           Learn more
         </button>
-        <button className="btn-solid" onClick={onGoToCreate}>
+        <button className="btn-solid btn-golden-flash" onClick={onGoToCreate}>
           Get Started
         </button>
       </div>

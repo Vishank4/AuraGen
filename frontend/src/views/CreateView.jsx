@@ -19,10 +19,10 @@ export default function CreateView({ onSaveSuccess, initialDraft }) {
   const gridRef = useRef(null);
 
   const engineThemes = {
-    cinematic: { color: '#1C2504', label: 'Cinematic', contrast: '#FFFFFF', theme: 'light' },
+    cinematic: { color: '#F7C940', label: 'Cinematic', contrast: '#000000', theme: 'dark' },
     photoreal: { color: '#FEFADD', label: 'Photoreal', contrast: '#000000', theme: 'dark' },
-    digital_art: { color: '#FFFFFF', label: 'Digital Art', contrast: '#000000', theme: 'dark' },
-    minimalist: { color: '#F4F1EA', label: 'Minimalist', contrast: '#000000', theme: 'dark' },
+    digital_art: { color: '#C86F4B', label: 'Digital Art', contrast: '#000000', theme: 'dark' },
+    minimalist: { color: '#CCF851', label: 'Minimalist', contrast: '#000000', theme: 'dark' },
   };
 
   const currentTheme = engineThemes[engine];
@@ -216,7 +216,7 @@ export default function CreateView({ onSaveSuccess, initialDraft }) {
 
             <div className="form-group">
               <label className="form-label" style={{ color: 'inherit' }}>Structural Grid</label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid-flex-wrap">
                 {activeLayouts.map(layout => (
                   <button
                     key={layout}
